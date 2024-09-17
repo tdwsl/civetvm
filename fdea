@@ -1,0 +1,23 @@
+Idea for disk format:
+
+Maybe each directory entry has a parent directory?
+Could go for flat fs, with one central list of files/directories.
+Maybe 256b blocks? Or 1k?
+With 256 byte blocks, each file could contain no. of bytes in last entry in
+a single byte in the directory entry.
+OR no of blocks could be at the start, then the last block link would be the
+no of bytes in final block. Then, an empty block would never start with zero!
+Contain date modified? What format?
+How many files in directory table? ~32 per 1024 block, if each is 32 bytes.
+Ok, got it: block 0 is boot, block 1 is table of directory tables
+16384 files max, seems ok
+Or maybe larger block size - 2k per block? 65536 files? If 2 bytes are used
+to reference a block, there would only be 65536 blocks...
+Stick with 1k.
+About boot: should there be a tag? Perhaps CIVT? CIVET123?
+There should be a tag for whether a file is open - perhaps a counter for
+read-only access, 1 byte, if 0xff then no more can be opened, then write access
+just sets it straight to that. Then again, maybe that's more for file handlers,
+shouldn't be on disk...
+Also, block 1 should contain size of disk in bytes... maybe.
+

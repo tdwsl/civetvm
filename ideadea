@@ -1,0 +1,75 @@
+
+Okay, so, maybe LR could be used for conditionals? Not a lot of long-term
+stuff to do with it anyhow.
+Like, gt/lt r,r writes to LR. Then branch would have more space. Or not,
+actually, maybe that wouldn't be worth it.
+
+As far as code density:
+sub r0,r1,r2
+gtz r0
+bnz r0,addr
+vs
+gt r1,r2
+bnz r14,addr
+
+So yeah, do this. And get rid of 3-operand sub.
+
+Also, I don't like the pre/post increment/decrement. There's gotta be some
+other stuff to put there instead, right? Maybe not.
+
+My real issue is with the syntax for assembly. Imagine a stack-based CISC
+instruction set: each instruction could just be, like, a byte. Yeah, I'm
+lazy. The actual representation of the code is pretty cool, nibble-aligned
+and all.
+
+Could do: dst, stn, ldn. Y'know, for Decrement STore / LoaD iNcrement, and
+such.
+
+Also I fear GC. How would I adapt this instruction set to work with a GC?
+Very drastic, I know, but the sort of thing a VM wouldn't be too bad for.
+A more realistic thing to do might be adding more BP stuff, maybe make a
+C-esque compiler. Or B-esque - I guess loads would have to be word-aligned.
+Wouldn't want to end up doing a VM in a VM.
+
+Could do:
+movwu r0,global
+asl r0,1
+lw r0,r0
+
+add r0,bp,local
+lw r0,r0
+
+That last one would be the same in C and other such languages. Actually, I was
+reflecting, and C and B actually handle arguments in the same way, so having
+an instruction like 'lwr r0,local' might make some sense. Then again, I'm not
+sure whether it wouldn't be nice to have longs too. Would they be
+word-aligned? 4 bytes to load/store a local variable isn't terrible, BUT that
+is assuming that all locals have to fit into 256 bytes. Really, it would be
+better to have another instruction to allow values that fit into, say,
+65536 bytes, to be pointed to in maybe 6 bytes. That wouldn't be so bad,
+right?
+
+Could do:
+movbu r1,<local
+rello r0,>local
+
+Where I'm changing 'add r,bp,x' to 'rel r,x'. Perhaps the assembly for this
+would be shortened to 'relw local', much like movw/movwu. Also, it could be
+scaled up in much the same way, so a 3-byte range would take 8 bytes to
+load/store a value. Not terrible. And only 4 bytes if the stack area is small.
+Yeah, solid plan.
+
+As I have made evident, I am pretty satisfied with my mov/movlo thing, and am
+content to extend it to BP-relative addressing. So maybe I could get rid of
+the 'adr' instruction? It seems nice for string addresses in assembly at
+least. I guess it can stay - making a compiler for C or Pascal seems pretty
+ambitious, to say the least, so I should probably focus on assembly nicities.
+
+Also, regarding branches, it's pretty minor, but maybe I should change bsr to
+bl, like ARM. Since I've decided I will be constantly abusing the LR by
+storing comparison results there, maybe I should agknowledge in the mnemonic
+names that it'll be used for long jumps.
+
+Also, unrelated, but maybe do the whitespace assembler thing again, commas as
+whitespace etc.
+

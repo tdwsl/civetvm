@@ -1,0 +1,193 @@
+
+[registers]
+
+16 registers total
+registers are memory-mapped, starting at address 0
+each register is 32 bit
+
+r15 is pc
+r14 is lr
+r13 is sp
+r12 is bp
+
+[kernel/user mode]
+
+kernel r12 is also user base address
+r11 is cr, counter until returning to kernel mode
+r10 is zr, user mode memory size
+r9  is ir, old value of cr for software interrupt
+
+if r11 is zero, kernel mode, otherwise, user mode
+r11 is decremented after each user mode instruction
+the port instruction in user mode returns to kernel mode
+r9 is set to r11, and then r11 is set to zero
+if r11 is zero during user mode port, pc is decremented instead
+the port immediate value is not passed on
+if memory out of range is accessed in user mode, r9 is set to -1 and r11 to 0
+
+[ports]
+
+port uses r0 as port no, 4-bit immediate as command
+
+port 0 should always be as follows:
+0 - exit the vm
+1 - get identifier of port r1 device into r1, 0 is null
+2 - get total connected devices into r1 (port 0 not included)
+3 - get total available memory into r1
+
+[instructions]
+
+pseudo-ops:
+movw  r,# -> movb  r,#>>8 : movlo r,#
+movwu r,# -> movbu r,#>>8 : movlo r,#
+movs  r,# -> movb  r,#>>16 : movlo r,#>>8 : movlo r,#
+movsu r,# -> movbu r,#>>16 : movlo r,#>>8 : movlo r,#
+movl  r,# -> movbu r,#>>24 : movlo r,#>>16 : movlo r,#>>8 : movlo r,#
+bl #      -> movbu lr,#>>13 : bllo (#>>1)&0xfff
+relw r,#  -> movbu lr,#>>8 : rello r,#
+rels r,#  -> movbu lr,#>>16 : movlo lr,#>>8 : rello r,#
+rell r,#  -> movbu lr,#>>24 : movlo lr,#>>16 : movlo lr,#>>8 : rello r,#
+
+jumps:
+bl is not relative
+b, bz, bnz are
+all are two-byte aligned (br is not)
+
+comparison:
+gt, lt, gtu, ltu and eq
+each write their result (1 or 0) to r14/lr
+
+word is 16 bit, long is 32
+instructions, as all other words/longs, are stored little-endian
+stack is pre-decrement
+
+[instruction encoding]
+
+instructions 1:
+
+instruction
+|    register
+|    |    immediate
+|    |    |
+iiii rrrr #### ####
+
+or
+
+iiii #### #### ####
+
+0  addi r,#
+1  movb  r,#
+2  movbu r,#u
+3  movlo r,#u
+4  rel r,#u
+5  rello r,#u
+6  adr r,#u*2
+7  andi r,#u
+8  ori  r,#u
+9  bllo #12u
+a  b #12
+b  bz r,#
+c  bnz r,#
+d  (instructions 2)
+e  (instructions 3)
+f  (instructions 4)
+
+instructions 2:
+
+     instruction
+     |    dst reg
+     |    |    src reg
+     |    |    |
+1101 iiii #### ####
+
+0  ll r,r
+1  lw r,r
+2  lb r,r
+3  lwu r,r
+4  lbu r,r
+5  lnl r,r
+6  lnw r,r
+7  lnb r,r
+8  lnwu r,r
+9  lnbu r,r
+a  gt r,r
+b  lt r,r
+c  gtu r,r
+d  ltu r,r
+e  eq r,r
+f
+
+instructions 3:
+
+     instruction
+     |    dst reg
+     |    |    src reg
+     |    |    |
+1110 iiii rrrr rrrr
+
+0  mov r,r
+1  add r,r
+2  sub r,r
+3  and r,r
+4  or  r,r
+5  xor r,r
+6  asr r,r
+7  lsr r,r
+8  lsl r,r
+9  mul  r,r
+a  mulu r,r
+b  div  r,r
+c  divu r,r
+d  rem  r,r
+e  remu r,r
+f
+
+instructions 4:
+
+     instruction
+     |    dst reg
+     |    |    src reg
+     |    |    |
+1111 iiii rrrr rrrr
+
+0  sl r,r
+1  sw r,r
+2  sb r,r
+3  dsl r,r
+4  dsw r,r
+5  dsb r,r
+6  snl r,r
+7  snw r,r
+8  snb r,r
+9  asri r,#+1
+a  lsri r,#+1
+b  lsli r,#+1
+c  muli r,#+3
+d  divi r,#+3
+e  divui r,#+3
+f  (instructions 5)
+
+instructions 5:
+
+          instruction
+          |    register
+          |    |
+1111 1111 iiii rrrr
+
+0  br r
+1  inv r
+2  neg r
+3  not r
+4  port #
+5
+6
+7
+8
+9
+a
+b
+c
+d
+e
+f
+
